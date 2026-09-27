@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenant Dashboard - PropertyRental</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="logo">🏠 PropertyRental - Tenant Portal</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Search Properties</a></li>
+                <li><span id="welcome-user"></span></li>
+                <li><button onclick="App.clearSession()" class="btn btn-danger btn-sm">Logout</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="alert-container"></div>
+
+        <h2>Tenant Dashboard</h2>
+        <br>
+
+        <!-- Apply Modal Form if URL has applyId -->
+        <div id="apply-card" class="card" style="display:none; margin-bottom: 2rem; border-color: var(--primary-color);">
+            <h3>Submit Rental Application</h3>
+            <p id="apply-property-info"></p>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Preferred Move-in Date</label>
+                <input type="date" id="apply-movein-date" class="form-control">
+            </div>
+            <div class="form-group" style="margin-top: 1rem;">
+                <label>Message to Owner</label>
+                <textarea id="apply-message" class="form-control" rows="3" placeholder="Introduce yourself and state your employment/family details..."></textarea>
+            </div>
+            <br>
+            <button class="btn btn-primary" onclick="submitApplicationAction()">Confirm & Send Application</button>
+        </div>
+
+        <!-- Rental Applications Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>My Rental Applications</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Location</th>
+                            <th>Move-in Date</th>
+                            <th>Rent</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenant-apps-table">
+                        <tr><td colspan="6">Loading applications...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Active Agreements Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Active Rental Agreements</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Owner</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Monthly Rent</th>
+                            <th>Deposit</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenant-agreements-table">
+                        <tr><td colspan="8">Loading agreements...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Monthly Rent Ledger Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Monthly Rent Ledger</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Month</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Paid Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenant-rent-table">
+                        <tr><td colspan="6">Loading rent ledger...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Maintenance & Complaints Grid -->
+        <div class="grid">
+            <div class="card">
+                <h3>Submit Maintenance Request</h3>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label>Property</label>
+                    <select id="maint-property-id" class="form-control"></select>
+                </div>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label>Title</label>
+                    <input type="text" id="maint-title" class="form-control" placeholder="e.g. Water Leak in Bathroom">
+                </div>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label>Priority</label>
+                    <select id="maint-priority" class="form-control">
+                        <option value="LOW">LOW</option>
+                        <option value="MEDIUM" selected>MEDIUM</option>
+                        <option value="HIGH">HIGH</option>
+                        <option value="URGENT">URGENT</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label>Description</label>
+                    <textarea id="maint-desc" class="form-control" rows="2"></textarea>
+                </div>
+                <br>
+                <button class="btn btn-primary btn-sm" onclick="createMaintenanceRequest()">Submit Request</button>
+            </div>
+
+            <div class="card">
+                <h3>Submit Complaint to Admin</h3>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label>Title</label>
+                    <input type="text" id="comp-title" class="form-control" placeholder="e.g. Deposit Refund Issue">
+                </div>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label>Description</label>
+                    <textarea id="comp-desc" class="form-control" rows="4"></textarea>
+                </div>
+                <br>
+                <button class="btn btn-danger btn-sm" onclick="createComplaint()">Submit Complaint</button>
+            </div>
+        </div>
+
+        <br>
+        <!-- Maintenance Requests Table -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>My Maintenance Requests</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Issue Title</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenant-maint-table">
+                        <tr><td colspan="5">Loading maintenance history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        let selectedApplyPropertyId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (App.getUserRole() !== 'TENANT') {
+                App.clearSession();
+                return;
+            }
+            document.getElementById('welcome-user').innerText = `👋 ${App.getUserName()}`;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const applyId = urlParams.get('applyId');
+            if (applyId) {
+                selectedApplyPropertyId = applyId;
+                document.getElementById('apply-card').style.display = 'block';
+                document.getElementById('apply-property-info').innerText = `Applying for Property ID: ${applyId}`;
+            }
+
+            loadApplications();
+            loadAgreements();
+            loadRentRecords();
+            loadMaintenance();
+        });
+
+        async function submitApplicationAction() {
+            const moveInDate = document.getElementById('apply-movein-date').value;
+            const message = document.getElementById('apply-message').value;
+
+            try {
+                await App.fetch('/tenant/applications', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        propertyId: selectedApplyPropertyId,
+                        preferredMoveInDate: moveInDate || null,
+                        message: message
+                    })
+                });
+                App.showAlert('Application submitted successfully!', 'success');
+                document.getElementById('apply-card').style.display = 'none';
+                loadApplications();
+            } catch (err) {
+                App.showAlert(err.message, 'danger');
+            }
+        }
+
+        async function loadApplications() {
+            try {
+                const res = await App.fetch('/tenant/applications');
+                const tbody = document.getElementById('tenant-apps-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No applications submitted yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(a => `
+                    <tr>
+                        <td><b>${a.property.title}</b></td>
+                        <td>${a.property.location.city}</td>
+                        <td>${a.preferredMoveInDate || 'N/A'}</td>
+                        <td>₹${a.property.monthlyRent}</td>
+                        <td><span class="badge badge-${a.status.toLowerCase()}">${a.status}</span></td>
+                        <td>
+                            ${a.status === 'PENDING' ? `<button class="btn btn-danger btn-sm" onclick="cancelApp(${a.id})">Cancel</button>` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function cancelApp(appId) {
+            if (!confirm('Cancel this application?')) return;
+            try {
+                await App.fetch(`/tenant/applications/${appId}/cancel`, { method: 'PUT' });
+                App.showAlert('Application cancelled', 'success');
+                loadApplications();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadAgreements() {
+            try {
+                const res = await App.fetch('/tenant/agreements');
+                const tbody = document.getElementById('tenant-agreements-table');
+                const maintSelect = document.getElementById('maint-property-id');
+                maintSelect.innerHTML = '';
+
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8">No rental agreements found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = res.data.map(ag => {
+                    maintSelect.innerHTML += `<option value="${ag.property.id}">${ag.property.title}</option>`;
+                    return `
+                        <tr>
+                            <td><b>${ag.property.title}</b></td>
+                            <td>${ag.owner.fullName} (${ag.owner.phone})</td>
+                            <td>${ag.startDate}</td>
+                            <td>${ag.endDate}</td>
+                            <td>₹${ag.monthlyRent}</td>
+                            <td>₹${ag.securityDeposit}</td>
+                            <td><span class="badge badge-${ag.agreementStatus.toLowerCase()}">${ag.agreementStatus}</span></td>
+                            <td>
+                                ${ag.agreementStatus === 'ACTIVE' ? `<button class="btn btn-danger btn-sm" onclick="terminateAgreement(${ag.id})">Terminate</button>` : '-'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function terminateAgreement(agreementId) {
+            if (!confirm('Terminate this agreement? Property will be set back to AVAILABLE.')) return;
+            try {
+                await App.fetch(`/tenant/agreements/${agreementId}/terminate`, { method: 'PUT' });
+                App.showAlert('Agreement terminated.', 'success');
+                loadAgreements();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadRentRecords() {
+            try {
+                const res = await App.fetch('/tenant/rent-records');
+                const tbody = document.getElementById('tenant-rent-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No rent records generated yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(r => `
+                    <tr>
+                        <td><b>${r.property.title}</b></td>
+                        <td>${r.monthYear}</td>
+                        <td>${r.dueDate}</td>
+                        <td>₹${r.amount}</td>
+                        <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+                        <td>${r.paidDate || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function createMaintenanceRequest() {
+            const propertyId = document.getElementById('maint-property-id').value;
+            const title = document.getElementById('maint-title').value;
+            const priority = document.getElementById('maint-priority').value;
+            const description = document.getElementById('maint-desc').value;
+
+            if (!propertyId || !title || !description) {
+                App.showAlert('Please fill in property, title, and description.', 'danger');
+                return;
+            }
+
+            try {
+                await App.fetch('/tenant/maintenance', {
+                    method: 'POST',
+                    body: JSON.stringify({ propertyId, title, priority, description })
+                });
+                App.showAlert('Maintenance request submitted', 'success');
+                loadMaintenance();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadMaintenance() {
+            try {
+                const res = await App.fetch('/tenant/maintenance');
+                const tbody = document.getElementById('tenant-maint-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No maintenance requests.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(m => `
+                    <tr>
+                        <td><b>${m.property.title}</b></td>
+                        <td>${m.title}</td>
+                        <td><span class="badge">${m.priority}</span></td>
+                        <td><span class="badge badge-${m.status.toLowerCase()}">${m.status}</span></td>
+                        <td>${m.createdAt.substring(0, 10)}</td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function createComplaint() {
+            const title = document.getElementById('comp-title').value;
+            const description = document.getElementById('comp-desc').value;
+            if (!title || !description) {
+                App.showAlert('Please enter title and description', 'danger');
+                return;
+            }
+            try {
+                await App.fetch('/tenant/complaints', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, description })
+                });
+                App.showAlert('Complaint submitted to Admin', 'success');
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+    </script>
+</body>
+</html>

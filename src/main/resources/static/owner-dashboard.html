@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Dashboard - PropertyRental</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="logo">🏠 PropertyRental - Owner Portal</a>
+            <ul class="nav-links">
+                <li><span id="welcome-user"></span></li>
+                <li><button onclick="App.clearSession()" class="btn btn-danger btn-sm">Logout</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="alert-container"></div>
+
+        <div id="owner-status-banner" style="margin-bottom: 1.5rem;"></div>
+
+        <h2>Owner Dashboard</h2>
+        <br>
+
+        <!-- Add Property Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Add New Property Listing</h3>
+            <p style="font-size: 0.85rem; color: #64748b;">Properties are submitted in PENDING state and become visible to tenants upon Admin approval.</p>
+            <br>
+            <form id="add-property-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="prop-title" class="form-control" placeholder="e.g. Spacious 3BHK Apartment" required>
+                </div>
+                <div class="form-group">
+                    <label>Property Type</label>
+                    <select id="prop-type-id" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Monthly Rent (₹)</label>
+                    <input type="number" id="prop-rent" class="form-control" placeholder="25000" required>
+                </div>
+                <div class="form-group">
+                    <label>Security Deposit (₹)</label>
+                    <input type="number" id="prop-deposit" class="form-control" placeholder="50000" required>
+                </div>
+                <div class="form-group">
+                    <label>Bedrooms</label>
+                    <input type="number" id="prop-bedrooms" class="form-control" value="2" required>
+                </div>
+                <div class="form-group">
+                    <label>Bathrooms</label>
+                    <input type="number" id="prop-bathrooms" class="form-control" value="2" required>
+                </div>
+                <div class="form-group">
+                    <label>Area (sq.ft)</label>
+                    <input type="number" id="prop-area" class="form-control" value="1200" required>
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" id="prop-city" class="form-control" placeholder="Hyderabad" required>
+                </div>
+                <div class="form-group">
+                    <label>Area / Locality</label>
+                    <input type="text" id="prop-area-loc" class="form-control" placeholder="Banjara Hills" required>
+                </div>
+                <div class="form-group">
+                    <label>State</label>
+                    <input type="text" id="prop-state" class="form-control" value="Telangana" required>
+                </div>
+                <div class="form-group">
+                    <label>Pincode</label>
+                    <input type="text" id="prop-pincode" class="form-control" value="500034" required>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Description</label>
+                    <textarea id="prop-desc" class="form-control" rows="2" placeholder="Full property details..." required></textarea>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <button type="submit" class="btn btn-primary">Submit Property for Admin Approval</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- My Properties Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>My Properties</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Location</th>
+                            <th>Rent</th>
+                            <th>Approval Status</th>
+                            <th>Availability Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="owner-properties-table">
+                        <tr><td colspan="6">Loading properties...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Rental Applications Received -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Received Applications</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Tenant</th>
+                            <th>Move-in Date</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="owner-apps-table">
+                        <tr><td colspan="6">Loading applications...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Rent Tracking Ledger -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Monthly Rent Ledger & Status Updates</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Tenant</th>
+                            <th>Month</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="owner-rent-table">
+                        <tr><td colspan="6">Loading rent records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Maintenance Requests -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Maintenance Requests</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Tenant</th>
+                            <th>Issue Title</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="owner-maint-table">
+                        <tr><td colspan="6">Loading maintenance requests...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (App.getUserRole() !== 'OWNER') {
+                App.clearSession();
+                return;
+            }
+            document.getElementById('welcome-user').innerText = `👋 ${App.getUserName()}`;
+            loadProfileStatus();
+            loadPropertyTypes();
+            loadOwnerProperties();
+            loadOwnerApplications();
+            loadOwnerRentRecords();
+            loadOwnerMaintenance();
+        });
+
+        async function loadProfileStatus() {
+            try {
+                const res = await App.fetch('/users/profile');
+                const status = res.data.ownerStatus;
+                const banner = document.getElementById('owner-status-banner');
+                if (status === 'PENDING') {
+                    banner.innerHTML = `<div style="padding: 1rem; background: #fef3c7; color: #92400e; border-radius: 6px;"><b>Owner Verification Pending:</b> Your owner account is waiting for Admin approval. You cannot list properties until approved.</div>`;
+                    document.getElementById('add-property-form').style.display = 'none';
+                } else if (status === 'REJECTED') {
+                    banner.innerHTML = `<div style="padding: 1rem; background: #fee2e2; color: #991b1b; border-radius: 6px;"><b>Owner Registration Rejected:</b> Admin has rejected your owner application.</div>`;
+                    document.getElementById('add-property-form').style.display = 'none';
+                } else {
+                    banner.innerHTML = `<div style="padding: 0.8rem 1rem; background: #dcfce7; color: #166534; border-radius: 6px;"><b>Approved Owner:</b> Your owner account is active and verified.</div>`;
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadPropertyTypes() {
+            try {
+                const res = await App.fetch('/properties/types');
+                const select = document.getElementById('prop-type-id');
+                select.innerHTML = res.data.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        document.getElementById('add-property-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                title: document.getElementById('prop-title').value,
+                propertyTypeId: parseInt(document.getElementById('prop-type-id').value),
+                monthlyRent: parseFloat(document.getElementById('prop-rent').value),
+                securityDeposit: parseFloat(document.getElementById('prop-deposit').value),
+                bedrooms: parseInt(document.getElementById('prop-bedrooms').value),
+                bathrooms: parseInt(document.getElementById('prop-bathrooms').value),
+                areaSqFt: parseFloat(document.getElementById('prop-area').value),
+                city: document.getElementById('prop-city').value,
+                area: document.getElementById('prop-area-loc').value,
+                state: document.getElementById('prop-state').value,
+                pincode: document.getElementById('prop-pincode').value,
+                description: document.getElementById('prop-desc').value,
+                furnishingStatus: 'FULLY_FURNISHED'
+            };
+
+            try {
+                await App.fetch('/owner/properties', {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                });
+                App.showAlert('Property submitted for Admin review!', 'success');
+                document.getElementById('add-property-form').reset();
+                loadOwnerProperties();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        });
+
+        async function loadOwnerProperties() {
+            try {
+                const res = await App.fetch('/owner/properties');
+                const tbody = document.getElementById('owner-properties-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No properties listed yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(p => `
+                    <tr>
+                        <td><b>${p.title}</b></td>
+                        <td>${p.location.area}, ${p.location.city}</td>
+                        <td>₹${p.monthlyRent}</td>
+                        <td><span class="badge badge-${p.approvalStatus.toLowerCase()}">${p.approvalStatus}</span></td>
+                        <td><span class="badge badge-${p.availabilityStatus.toLowerCase()}">${p.availabilityStatus}</span></td>
+                        <td>
+                            ${p.availabilityStatus === 'AVAILABLE' ? `<button class="btn btn-secondary btn-sm" onclick="deactivateProperty(${p.id})">Deactivate</button>` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function deactivateProperty(id) {
+            if (!confirm('Deactivate property listing?')) return;
+            try {
+                await App.fetch(`/owner/properties/${id}`, { method: 'DELETE' });
+                App.showAlert('Property deactivated.', 'success');
+                loadOwnerProperties();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadOwnerApplications() {
+            try {
+                const res = await App.fetch('/owner/applications');
+                const tbody = document.getElementById('owner-apps-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No applications received yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(a => `
+                    <tr>
+                        <td><b>${a.property.title}</b></td>
+                        <td>${a.tenant.fullName} (${a.tenant.email})</td>
+                        <td>${a.preferredMoveInDate || 'N/A'}</td>
+                        <td>${a.message || 'No message'}</td>
+                        <td><span class="badge badge-${a.status.toLowerCase()}">${a.status}</span></td>
+                        <td>
+                            ${a.status === 'PENDING' ? `
+                                <button class="btn btn-success btn-sm" onclick="acceptApp(${a.id})">Accept</button>
+                                <button class="btn btn-danger btn-sm" onclick="rejectApp(${a.id})">Reject</button>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function acceptApp(id) {
+            if (!confirm('Accept this application? Active agreement will be generated & property marked RENTED.')) return;
+            try {
+                await App.fetch(`/owner/applications/${id}/accept`, { method: 'PUT' });
+                App.showAlert('Application accepted! Rental agreement activated.', 'success');
+                loadOwnerApplications();
+                loadOwnerProperties();
+                loadOwnerRentRecords();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function rejectApp(id) {
+            if (!confirm('Reject application?')) return;
+            try {
+                await App.fetch(`/owner/applications/${id}/reject`, { method: 'PUT' });
+                App.showAlert('Application rejected.', 'success');
+                loadOwnerApplications();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadOwnerRentRecords() {
+            try {
+                const res = await App.fetch('/owner/rent-records');
+                const tbody = document.getElementById('owner-rent-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No rent records generated.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(r => `
+                    <tr>
+                        <td><b>${r.property.title}</b></td>
+                        <td>${r.tenant.fullName}</td>
+                        <td>${r.monthYear}</td>
+                        <td>₹${r.amount}</td>
+                        <td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td>
+                        <td>
+                            ${r.status === 'PENDING' ? `
+                                <button class="btn btn-success btn-sm" onclick="updateRentStatus(${r.id}, 'PAID')">Mark PAID</button>
+                                <button class="btn btn-secondary btn-sm" onclick="updateRentStatus(${r.id}, 'WAIVED')">Waive</button>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function updateRentStatus(recordId, status) {
+            try {
+                await App.fetch(`/owner/rent-records/${recordId}/status?status=${status}`, { method: 'PUT' });
+                App.showAlert(`Rent status updated to ${status}`, 'success');
+                loadOwnerRentRecords();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadOwnerMaintenance() {
+            try {
+                const res = await App.fetch('/owner/maintenance');
+                const tbody = document.getElementById('owner-maint-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No maintenance requests.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(m => `
+                    <tr>
+                        <td><b>${m.property.title}</b></td>
+                        <td>${m.tenant.fullName}</td>
+                        <td>${m.title}</td>
+                        <td><span class="badge">${m.priority}</span></td>
+                        <td><span class="badge badge-${m.status.toLowerCase()}">${m.status}</span></td>
+                        <td>
+                            ${m.status === 'OPEN' ? `<button class="btn btn-primary btn-sm" onclick="updateMaintStatus(${m.id}, 'IN_PROGRESS')">In Progress</button>` : ''}
+                            ${m.status === 'IN_PROGRESS' ? `<button class="btn btn-success btn-sm" onclick="updateMaintStatus(${m.id}, 'RESOLVED')">Resolve</button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function updateMaintStatus(id, status) {
+            try {
+                await App.fetch(`/owner/maintenance/${id}/status?status=${status}`, { method: 'PUT' });
+                App.showAlert('Maintenance status updated', 'success');
+                loadOwnerMaintenance();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+    </script>
+</body>
+</html>

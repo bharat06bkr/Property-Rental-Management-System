@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property & Rental Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="logo">🏠 PropertyRental</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Search Properties</a></li>
+                <li id="nav-login"><a href="login.html" class="btn btn-primary">Login</a></li>
+                <li id="nav-register"><a href="register.html" class="btn btn-secondary">Register</a></li>
+                <li id="nav-dashboard" style="display:none;"><a href="#" id="dashboard-link" class="btn btn-primary">My Dashboard</a></li>
+                <li id="nav-logout" style="display:none;"><a href="#" onclick="App.clearSession()" class="btn btn-danger btn-sm">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Find Your Ideal Rental Home</h1>
+            <p>Directly connecting Property Owners and Tenants with verified listings, automated application processing, rent tracking, and maintenance management.</p>
+        </section>
+
+        <!-- Search & Filter Controls -->
+        <section class="filter-bar">
+            <div class="form-group">
+                <label>City / Location</label>
+                <input type="text" id="filter-city" class="form-control" placeholder="e.g. Hyderabad, Bangalore">
+            </div>
+            <div class="form-group">
+                <label>Property Type</label>
+                <select id="filter-type" class="form-control">
+                    <option value="">All Types</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Max Rent (₹)</label>
+                <input type="number" id="filter-max-rent" class="form-control" placeholder="e.g. 25000">
+            </div>
+            <div class="form-group">
+                <label>Bedrooms</label>
+                <select id="filter-bedrooms" class="form-control">
+                    <option value="">Any BHK</option>
+                    <option value="1">1 BHK</option>
+                    <option value="2">2 BHK</option>
+                    <option value="3">3 BHK</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary" onclick="loadProperties()">Search Properties</button>
+            </div>
+        </section>
+
+        <h2>Available Properties</h2>
+        <br>
+        <div id="property-grid" class="grid">
+            <p>Loading properties...</p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Property & Rental Management System. Built with Java 17, Spring Boot, Spring Security & Vanilla JS.</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthHeader();
+            loadPropertyTypes();
+            loadProperties();
+        });
+
+        function checkAuthHeader() {
+            const role = App.getUserRole();
+            if (role) {
+                document.getElementById('nav-login').style.display = 'none';
+                document.getElementById('nav-register').style.display = 'none';
+                const dashLink = document.getElementById('dashboard-link');
+                dashLink.parentElement.style.display = 'inline';
+                document.getElementById('nav-logout').style.display = 'inline';
+
+                if (role === 'ADMIN') dashLink.href = 'admin-dashboard.html';
+                else if (role === 'OWNER') dashLink.href = 'owner-dashboard.html';
+                else dashLink.href = 'tenant-dashboard.html';
+            }
+        }
+
+        async function loadPropertyTypes() {
+            try {
+                const res = await App.fetch('/properties/types');
+                const select = document.getElementById('filter-type');
+                res.data.forEach(t => {
+                    select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadProperties() {
+            const city = document.getElementById('filter-city').value;
+            const typeId = document.getElementById('filter-type').value;
+            const maxRent = document.getElementById('filter-max-rent').value;
+            const bedrooms = document.getElementById('filter-bedrooms').value;
+
+            let query = '/properties?';
+            if (city) query += `city=${encodeURIComponent(city)}&`;
+            if (typeId) query += `propertyTypeId=${typeId}&`;
+            if (maxRent) query += `maxRent=${maxRent}&`;
+            if (bedrooms) query += `bedrooms=${bedrooms}&`;
+
+            try {
+                const res = await App.fetch(query);
+                const grid = document.getElementById('property-grid');
+                if (res.data.length === 0) {
+                    grid.innerHTML = '<p>No available properties found matching your criteria.</p>';
+                    return;
+                }
+
+                grid.innerHTML = res.data.map(p => `
+                    <div class="card">
+                        <div class="card-title">${p.title}</div>
+                        <div class="card-subtitle">📍 ${p.location.area}, ${p.location.city} • ${p.propertyType.name}</div>
+                        <div class="property-price">₹${p.monthlyRent.toLocaleString()} / month</div>
+                        <p style="font-size: 0.9rem; color: #475569; margin: 0.5rem 0;">
+                            <b>${p.bedrooms} BHK</b> • ${p.bathrooms} Baths • ${p.areaSqFt} sq.ft • ${p.furnishingStatus}
+                        </p>
+                        <p style="font-size: 0.85rem; color: #64748b;">${p.description.substring(0, 100)}...</p>
+                        <br>
+                        <button class="btn btn-primary btn-sm" onclick="applyForProperty(${p.id})">Apply for Rental</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                document.getElementById('property-grid').innerHTML = `<p style="color:red;">Error loading properties: ${err.message}</p>`;
+            }
+        }
+
+        function applyForProperty(propertyId) {
+            const role = App.getUserRole();
+            if (!role) {
+                alert('Please login as a Tenant to submit rental applications.');
+                window.location.href = 'login.html';
+                return;
+            }
+            if (role !== 'TENANT') {
+                alert('Only Tenants can apply for properties. Current role: ' + role);
+                return;
+            }
+            window.location.href = `tenant-dashboard.html?applyId=${propertyId}`;
+        }
+    </script>
+</body>
+</html>

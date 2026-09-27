@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - PropertyRental</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="logo">🏠 PropertyRental - Admin Control Panel</a>
+            <ul class="nav-links">
+                <li><span id="welcome-user"></span></li>
+                <li><button onclick="App.clearSession()" class="btn btn-danger btn-sm">Logout</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="alert-container"></div>
+
+        <h2>Platform System Overview</h2>
+        <br>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="stat-users">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-pending-owners" style="color: var(--warning-color);">0</div>
+                <div class="stat-label">Pending Owner Approvals</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-pending-props" style="color: var(--warning-color);">0</div>
+                <div class="stat-label">Pending Property Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-agreements" style="color: var(--success-color);">0</div>
+                <div class="stat-label">Active Rental Agreements</div>
+            </div>
+        </div>
+
+        <!-- Pending Owner Registrations -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Pending Owner Verification Requests</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Owner Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Registered Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-pending-owners-table">
+                        <tr><td colspan="5">Loading pending owners...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pending Property Approvals -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Pending Property Listing Reviews</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property Title</th>
+                            <th>Owner</th>
+                            <th>Location</th>
+                            <th>Type</th>
+                            <th>Monthly Rent</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-pending-props-table">
+                        <tr><td colspan="6">Loading pending property reviews...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- All Platform Users -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>All Platform Users</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Owner Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-table">
+                        <tr><td colspan="6">Loading users...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tenant Complaints -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3>Tenant Complaints Management</h3>
+            <div class="table-container" style="margin-top: 1rem;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tenant</th>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-complaints-table">
+                        <tr><td colspan="5">Loading complaints...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (App.getUserRole() !== 'ADMIN') {
+                App.clearSession();
+                return;
+            }
+            document.getElementById('welcome-user').innerText = `👑 Admin: ${App.getUserName()}`;
+            loadDashboardStats();
+            loadPendingOwners();
+            loadPendingProperties();
+            loadAllUsers();
+            loadComplaints();
+        });
+
+        async function loadDashboardStats() {
+            try {
+                const res = await App.fetch('/admin/dashboard');
+                const stats = res.data;
+                document.getElementById('stat-users').innerText = stats.totalUsers;
+                document.getElementById('stat-pending-owners').innerText = stats.pendingOwners;
+                document.getElementById('stat-pending-props').innerText = stats.pendingProperties;
+                document.getElementById('stat-agreements').innerText = stats.activeAgreements;
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadPendingOwners() {
+            try {
+                const res = await App.fetch('/admin/owners?status=PENDING');
+                const tbody = document.getElementById('admin-pending-owners-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No pending owner verification requests.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(o => `
+                    <tr>
+                        <td><b>${o.fullName}</b></td>
+                        <td>${o.email}</td>
+                        <td>${o.phone}</td>
+                        <td>${o.createdAt.substring(0, 10)}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="approveOwner(${o.id}, true)">Approve</button>
+                            <button class="btn btn-danger btn-sm" onclick="approveOwner(${o.id}, false)">Reject</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function approveOwner(id, approved) {
+            const reason = approved ? null : prompt('Enter rejection reason:');
+            try {
+                await App.fetch(`/admin/owners/${id}/approve`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ approved, rejectionReason: reason })
+                });
+                App.showAlert(`Owner ${approved ? 'approved' : 'rejected'} successfully`, 'success');
+                loadDashboardStats();
+                loadPendingOwners();
+                loadAllUsers();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadPendingProperties() {
+            try {
+                const res = await App.fetch('/admin/properties/pending');
+                const tbody = document.getElementById('admin-pending-props-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No pending property listing reviews.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(p => `
+                    <tr>
+                        <td><b>${p.title}</b></td>
+                        <td>${p.owner.fullName}</td>
+                        <td>${p.location.area}, ${p.location.city}</td>
+                        <td>${p.propertyType.name}</td>
+                        <td>₹${p.monthlyRent}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="approveProperty(${p.id}, true)">Approve Listing</button>
+                            <button class="btn btn-danger btn-sm" onclick="approveProperty(${p.id}, false)">Reject</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function approveProperty(id, approved) {
+            const reason = approved ? null : prompt('Enter rejection reason:');
+            try {
+                await App.fetch(`/admin/properties/${id}/approve`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ approved, rejectionReason: reason })
+                });
+                App.showAlert(`Property ${approved ? 'approved' : 'rejected'} successfully`, 'success');
+                loadDashboardStats();
+                loadPendingProperties();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+
+        async function loadAllUsers() {
+            try {
+                const res = await App.fetch('/admin/users');
+                const tbody = document.getElementById('admin-users-table');
+                tbody.innerHTML = res.data.map(u => `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td><b>${u.fullName}</b></td>
+                        <td>${u.email}</td>
+                        <td>${u.phone}</td>
+                        <td><span class="badge">${u.role}</span></td>
+                        <td>${u.ownerStatus ? `<span class="badge badge-${u.ownerStatus.toLowerCase()}">${u.ownerStatus}</span>` : '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function loadComplaints() {
+            try {
+                const res = await App.fetch('/admin/complaints');
+                const tbody = document.getElementById('admin-complaints-table');
+                if (res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No complaints recorded.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(c => `
+                    <tr>
+                        <td><b>${c.tenant.fullName}</b></td>
+                        <td>${c.title}</td>
+                        <td>${c.description}</td>
+                        <td><span class="badge badge-${c.status.toLowerCase()}">${c.status}</span></td>
+                        <td>
+                            ${c.status === 'OPEN' || c.status === 'UNDER_REVIEW' ? `
+                                <button class="btn btn-success btn-sm" onclick="resolveComplaint(${c.id}, 'RESOLVED')">Resolve</button>
+                                <button class="btn btn-danger btn-sm" onclick="resolveComplaint(${c.id}, 'REJECTED')">Reject</button>
+                            ` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function resolveComplaint(id, status) {
+            const resp = prompt('Enter admin response note:');
+            try {
+                await App.fetch(`/admin/complaints/${id}/respond?status=${status}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ adminResponse: resp })
+                });
+                App.showAlert(`Complaint status updated to ${status}`, 'success');
+                loadComplaints();
+            } catch (err) { App.showAlert(err.message, 'danger'); }
+        }
+    </script>
+</body>
+</html>
